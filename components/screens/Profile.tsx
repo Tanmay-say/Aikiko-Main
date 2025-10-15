@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Loader2, Sparkles } from 'lucide-react';
 import { BottomNav } from '../BottomNav';
@@ -24,7 +24,7 @@ export function Profile({ navigate }: ProfileProps) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -82,7 +82,7 @@ export function Profile({ navigate }: ProfileProps) {
   return (
     <div className="h-full flex flex-col bg-[#222831]">
       <div className="px-6 pt-6 pb-4">
-        <h1 className="text-4xl font-bold text-[#EEEEEE] font-['Museo_Moderno']">Profile</h1>
+        <h1 className="text-4xl font-bold text-[#EEEEEE]">Profile</h1>
         <p className="text-[#EEEEEE]/60 text-lg mt-1">Account Settings</p>
       </div>
 

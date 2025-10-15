@@ -20,7 +20,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={museoModerno.variable}>
-      <body className={`${museoModerno.className} font-sans`}>{children}</body>
+      <body className={museoModerno.className}>{children}</body>
     </html>
   );
 }

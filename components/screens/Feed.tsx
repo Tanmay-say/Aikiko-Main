@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Loader2, Twitter, Globe, Code, MessageSquare, TrendingUp, Bell, Newspaper } from 'lucide-react';
 import { BottomNav } from '../BottomNav';
@@ -16,9 +16,9 @@ export function Feed({ navigate }: FeedProps) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
-  const fetchFeedItems = async (isRefresh = false) => {
+  const fetchFeedItems = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
 
@@ -41,7 +41,7 @@ export function Feed({ navigate }: FeedProps) {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [supabase]);
 
   useEffect(() => {
     fetchFeedItems();
@@ -78,7 +78,7 @@ export function Feed({ navigate }: FeedProps) {
   return (
     <div className="h-full flex flex-col bg-[#222831]">
       <div className="flex items-center justify-between px-6 pt-6 pb-4">
-        <h1 className="text-4xl font-bold text-[#EEEEEE] font-['Museo_Moderno']">Aikiko</h1>
+        <h1 className="text-4xl font-bold text-[#EEEEEE]">Aikiko</h1>
         <motion.button
           whileTap={{ scale: 0.95 }}
           onClick={() => navigate('create-agent')}
