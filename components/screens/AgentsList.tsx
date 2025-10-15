@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Loader2, Twitter, Globe, Code, MessageSquare, MoreVertical, BookOpen } from 'lucide-react';
+import { Loader2, Twitter, Globe, Code, MessageSquare, MoreVertical, BookOpen } from 'lucide-react';
 import { BottomNav } from '../BottomNav';
 import { Screen, Agent } from '../AikikoApp';
 import { createClient } from '@/lib/supabase-client';
@@ -15,7 +15,7 @@ export function AgentsList({ navigate }: AgentsListProps) {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     const fetchAgents = async () => {
@@ -53,15 +53,15 @@ export function AgentsList({ navigate }: AgentsListProps) {
   };
 
   return (
-    <div className="h-full flex flex-col bg-[#222831]">
+    <div className="h-full flex flex-col bg-background">
       <div className="flex items-center justify-between px-6 pt-6 pb-4">
-        <h1 className="text-4xl font-bold text-[#EEEEEE] font-['Museo_Moderno']">Agents</h1>
+        <h1 className="text-4xl font-bold text-foreground">Agents</h1>
         <motion.button
           whileTap={{ scale: 0.95 }}
           onClick={() => navigate('create-agent')}
-          className="bg-[#D65A31] text-[#EEEEEE] p-3 rounded-full"
+          className="bg-background border-2 border-[#D65A31] text-[#D65A31] px-4 py-2 rounded-full font-semibold flex items-center gap-2 hover:bg-[#D65A31] hover:text-white transition-colors shadow-[0_8px_20px_rgba(214,90,49,0.25)]"
         >
-          <Plus size={24} />
+          Create Agent
         </motion.button>
       </div>
 
@@ -76,17 +76,17 @@ export function AgentsList({ navigate }: AgentsListProps) {
             animate={{ opacity: 1, y: 0 }}
             className="flex flex-col items-center justify-center h-64 text-center"
           >
-            <div className="w-32 h-32 mb-6 rounded-full bg-[#393E46] flex items-center justify-center">
-              <BookOpen size={48} className="text-[#EEEEEE]/30" />
+            <div className="w-32 h-32 mb-6 rounded-full bg-card flex items-center justify-center">
+              <BookOpen size={48} className="text-foreground/30" />
             </div>
-            <h3 className="text-xl font-bold text-[#EEEEEE] mb-2">No agents yet</h3>
-            <p className="text-[#EEEEEE]/60 mb-6 max-w-xs">
+            <h3 className="text-xl font-bold text-foreground mb-2">No agents yet</h3>
+            <p className="text-foreground/60 mb-6 max-w-xs">
               Create your first agent to start monitoring
             </p>
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={() => navigate('create-agent')}
-              className="bg-[#D65A31] text-[#EEEEEE] px-6 py-3 rounded-full font-semibold"
+              className="bg-[#D65A31] text-white px-6 py-3 rounded-full font-semibold shadow-[0_8px_20px_rgba(214,90,49,0.35)]"
             >
               Create Agent
             </motion.button>
@@ -101,22 +101,22 @@ export function AgentsList({ navigate }: AgentsListProps) {
                 transition={{ delay: index * 0.05 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => navigate('agent-detail', agent.id)}
-                className="bg-[#393E46] rounded-3xl p-5 cursor-pointer"
+                className="bg-card rounded-3xl p-5 cursor-pointer border border-border hover:border-[#D65A31]/40 transition-colors"
               >
                 <div className="flex items-start gap-3">
-                  <div className="bg-[#222831] p-3 rounded-xl">
+                  <div className="bg-background p-3 rounded-xl">
                     {getSourceIcon(agent.source_type)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between mb-2">
-                      <h3 className="text-[#EEEEEE] font-semibold text-lg">
+                      <h3 className="text-foreground font-semibold text-lg">
                         {agent.title}
                       </h3>
-                      <button className="text-[#EEEEEE]/60">
+                      <button className="text-foreground/60">
                         <MoreVertical size={20} />
                       </button>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-[#EEEEEE]/60 mb-3">
+                    <div className="flex items-center gap-2 text-sm text-foreground/60 mb-3">
                       <span className="capitalize">{agent.monitor_frequency}</span>
                       <span>•</span>
                       <span>{agent.credits_per_check} credits/check</span>
@@ -130,7 +130,7 @@ export function AgentsList({ navigate }: AgentsListProps) {
                         {agent.is_active ? 'Active' : 'Paused'}
                       </div>
                       {agent.source_url && (
-                        <div className="px-3 py-1 rounded-full text-xs font-medium bg-[#222831] text-[#EEEEEE]/60 truncate max-w-[180px]">
+                        <div className="px-3 py-1 rounded-full text-xs font-medium bg-background text-foreground/60 truncate max-w-[180px]">
                           {agent.source_url}
                         </div>
                       )}

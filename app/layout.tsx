@@ -1,6 +1,7 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { MuseoModerno } from 'next/font/google';
+import { ThemeProvider } from '@/components/ThemeProvider';
 
 const museoModerno = MuseoModerno({ 
   subsets: ['latin'],
@@ -19,8 +20,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={museoModerno.variable}>
-      <body className={museoModerno.className}>{children}</body>
+    <html lang="en" className={museoModerno.variable} suppressHydrationWarning>
+      <body className={museoModerno.className}>
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
+      </body>
     </html>
   );
 }

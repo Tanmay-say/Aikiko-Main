@@ -53,7 +53,7 @@ export function AikikoApp() {
   };
 
   return (
-    <div className="fixed inset-0 bg-[#222831] overflow-hidden">
+    <div className="fixed inset-0 bg-background overflow-hidden">
       <div className="w-full h-full max-w-[390px] mx-auto relative">
         <AnimatePresence mode="wait">
           {currentScreen === 'feed' && (
