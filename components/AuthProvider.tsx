@@ -34,12 +34,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     handleHashSession().finally(async () => {
-      const { data } = await supabase.auth.getUser();
-      setUser(data.user ?? null);
+      const { data } = await supabase.auth.getSession();
+      setUser(data.session?.user ?? null);
       setInitializing(false);
     });
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
       setUser(session?.user ?? null);
+      if (typeof window !== 'undefined' && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+        const url = new URL(window.location.href);
+        if (url.hash) {
+          window.history.replaceState({}, '', url.origin + url.pathname);
+        }
+      }
     });
     return () => {
       sub.subscription.unsubscribe();

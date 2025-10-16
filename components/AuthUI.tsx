@@ -25,9 +25,19 @@ export default function AuthUI() {
     setLoading(true);
     setError('');
     try {
+      // Validate env before attempting
+      const supaUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supaKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      if (!supaUrl || !supaKey) {
+        throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY');
+      }
+
       await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: typeof window !== 'undefined' ? window.location.origin : undefined },
+        options: {
+          redirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
+          queryParams: { prompt: 'select_account' },
+        },
       });
     } catch (err: any) {
       setError(err.message || 'Google sign-in failed');
@@ -140,6 +150,18 @@ export default function AuthUI() {
 
       <div className="text-xs text-foreground/40 text-center">
         Supabase project: <span className="font-mono">{projectRef}</span>
+        {typeof window !== 'undefined' && projectRef !== 'unknown' && (
+          <div className="mt-1">
+            <a
+              href={`https://${projectRef}.supabase.co/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(window.location.origin)}`}
+              className="underline text-foreground/60"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Open direct Google auth (fallback)
+            </a>
+          </div>
+        )}
       </div>
     </div>
   );
