@@ -9,11 +9,20 @@ import { createClient } from '@/lib/supabase-client';
 interface CreateAgentProps {
   goBack: () => void;
   navigate: (screen: Screen) => void;
+  onCreated?: (agent: {
+    id: string;
+    title: string;
+    source_type: SourceType;
+    source_url?: string | null;
+    monitor_frequency: 'hourly' | 'daily' | 'weekly';
+    is_active: boolean;
+    created_at: string;
+  }) => void;
 }
 
 type SourceType = 'twitter' | 'web' | 'api' | 'subject';
 
-export function CreateAgent({ goBack, navigate }: CreateAgentProps) {
+export function CreateAgent({ goBack, navigate, onCreated }: CreateAgentProps) {
   const [step, setStep] = useState(1);
   const [sourceType, setSourceType] = useState<SourceType>('subject');
   const [title, setTitle] = useState('');
@@ -57,7 +66,17 @@ export function CreateAgent({ goBack, navigate }: CreateAgentProps) {
 
       if (error) throw error;
 
-      navigate('feed');
+      const newAgent = {
+        id: typeof crypto !== 'undefined' && 'randomUUID' in crypto ? (crypto as any).randomUUID() : `${Date.now()}`,
+        title: title || 'Untitled Agent',
+        source_type: sourceType,
+        source_url: sourceUrl || null,
+        monitor_frequency: monitorFrequency,
+        is_active: isActive,
+        created_at: new Date().toISOString(),
+      };
+      onCreated?.(newAgent);
+      navigate('agents');
     } catch (error) {
       console.error('Error creating agent:', error);
       alert('Failed to create agent');

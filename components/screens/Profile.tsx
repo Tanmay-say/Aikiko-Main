@@ -4,6 +4,9 @@ import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Loader2, Sparkles, Sun, Moon } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { useAuth } from '../AuthProvider';
+import AuthUI, { AuthUserMenu } from '@/components/AuthUI';
+import { AikikoWordLoader } from '@/components/AikikoWordLoader';
 import { BottomNav } from '../BottomNav';
 import { Screen } from '../AikikoApp';
 import { createClient } from '@/lib/supabase-client';
@@ -27,6 +30,7 @@ export function Profile({ navigate }: ProfileProps) {
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+  const { user } = useAuth();
 
   const supabase = useMemo(() => createClient(), []);
 
@@ -77,8 +81,8 @@ export function Profile({ navigate }: ProfileProps) {
 
   if (loading) {
     return (
-      <div className="h-full flex items-center justify-center bg-[#222831]">
-        <Loader2 className="animate-spin text-[#D65A31]" size={32} />
+      <div className="h-full flex items-center justify-center bg-background">
+        <AikikoWordLoader size={200} />
       </div>
     );
   }
@@ -88,15 +92,18 @@ export function Profile({ navigate }: ProfileProps) {
       <div className="px-6 pt-6 pb-4">
         <div className="flex items-center justify-between">
           <h1 className="text-4xl font-bold text-foreground">Profile</h1>
-          {mounted && (
-            <button
-              onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-              className="p-2 rounded-xl border border-border text-foreground/80 hover:text-foreground"
-              aria-label="Toggle theme"
-            >
-              {resolvedTheme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {mounted && (
+              <button
+                onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+                className="p-2 rounded-xl border border-border text-foreground/80 hover:text-foreground"
+                aria-label="Toggle theme"
+              >
+                {resolvedTheme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+              </button>
+            )}
+            <AuthUserMenu />
+          </div>
         </div>
         <p className="text-foreground/60 text-lg mt-1">Account Settings</p>
       </div>
@@ -107,10 +114,23 @@ export function Profile({ navigate }: ProfileProps) {
             whileTap={{ scale: 0.98 }}
             className="bg-card rounded-3xl p-6 border border-border"
           >
-            <p className="text-foreground/60 text-sm mb-2">Your plan</p>
-            <h2 className="text-5xl font-bold text-foreground capitalize">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-foreground/60 text-sm">Your plan</p>
+              {user && user.user_metadata?.avatar_url && (
+                <img src={user.user_metadata.avatar_url} alt={user.user_metadata.full_name || 'Avatar'} className="w-10 h-10 rounded-full border border-border" />
+              )}
+            </div>
+            <h2 className="text-5xl font-bold text-foreground capitalize mb-1">
               {profile?.subscription_plan || 'Free'}
             </h2>
+            {user ? (
+              <div className="mt-2">
+                <p className="text-foreground font-semibold">{user.user_metadata?.full_name || user.email}</p>
+                <p className="text-foreground/60 text-sm">{user.email}</p>
+              </div>
+            ) : (
+              <p className="text-foreground/60 text-sm">Sign in with Google or email to personalize</p>
+            )}
           </motion.div>
 
           <motion.div

@@ -8,6 +8,8 @@ import { CreateAgent } from './screens/CreateAgent';
 import { AgentDetail } from './screens/AgentDetail';
 import { Credits } from './screens/Credits';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from './AuthProvider';
+import AuthUI from '@/components/AuthUI';
 
 export type Screen = 'feed' | 'agents' | 'profile' | 'create-agent' | 'agent-detail' | 'credits';
 
@@ -39,6 +41,8 @@ export interface FeedItem {
 export function AikikoApp() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('feed');
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
+  const [localAgents, setLocalAgents] = useState<Agent[]>([]);
+  const { user } = useAuth();
 
   const navigate = (screen: Screen, agentId?: string) => {
     if (agentId) setSelectedAgentId(agentId);
@@ -76,7 +80,7 @@ export function AikikoApp() {
               exit={{ opacity: 0, x: 20 }}
               className="h-full"
             >
-              <AgentsList navigate={navigate} />
+              <AgentsList navigate={navigate} localAgents={localAgents} />
             </motion.div>
           )}
 
@@ -88,7 +92,21 @@ export function AikikoApp() {
               exit={{ opacity: 0, x: 20 }}
               className="h-full"
             >
-              <Profile navigate={navigate} />
+              {user ? (
+                <Profile navigate={navigate} />
+              ) : (
+                <div className="h-full bg-background">
+                  <div className="px-6 pt-6 pb-4">
+                    <h1 className="text-4xl font-bold text-foreground">Profile</h1>
+                    <p className="text-foreground/60 text-lg mt-1">Sign in to access settings</p>
+                  </div>
+                  <div className="px-6">
+                    <div className="bg-card/60 backdrop-blur border border-white/10 rounded-3xl p-6">
+                      <AuthUI />
+                    </div>
+                  </div>
+                </div>
+              )}
             </motion.div>
           )}
 
@@ -100,7 +118,11 @@ export function AikikoApp() {
               exit={{ opacity: 0, y: 20 }}
               className="h-full"
             >
-              <CreateAgent goBack={goBack} navigate={navigate} />
+              <CreateAgent
+                goBack={goBack}
+                navigate={navigate}
+                onCreated={(agent) => setLocalAgents((prev) => [agent as Agent, ...prev])}
+              />
             </motion.div>
           )}
 

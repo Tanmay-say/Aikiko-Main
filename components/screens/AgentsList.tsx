@@ -2,16 +2,18 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Loader2, Twitter, Globe, Code, MessageSquare, MoreVertical, BookOpen } from 'lucide-react';
+import { Loader2, Twitter, Globe, Code, MessageSquare, MoreVertical, BookOpen, Plus } from 'lucide-react';
+import { AikikoWordLoader } from '@/components/AikikoWordLoader';
 import { BottomNav } from '../BottomNav';
 import { Screen, Agent } from '../AikikoApp';
 import { createClient } from '@/lib/supabase-client';
 
 interface AgentsListProps {
   navigate: (screen: Screen, agentId?: string) => void;
+  localAgents?: Agent[];
 }
 
-export function AgentsList({ navigate }: AgentsListProps) {
+export function AgentsList({ navigate, localAgents = [] }: AgentsListProps) {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -61,16 +63,35 @@ export function AgentsList({ navigate }: AgentsListProps) {
           onClick={() => navigate('create-agent')}
           className="bg-background border-2 border-[#D65A31] text-[#D65A31] px-4 py-2 rounded-full font-semibold flex items-center gap-2 hover:bg-[#D65A31] hover:text-white transition-colors shadow-[0_8px_20px_rgba(214,90,49,0.25)]"
         >
-          Create Agent
+          <Plus size={18} /> Create Agent
         </motion.button>
       </div>
 
       <div className="flex-1 overflow-y-auto pb-20 px-6">
-        {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <Loader2 className="animate-spin text-[#D65A31]" size={32} />
+        {localAgents.length > 0 && (
+          <div className="mb-5">
+            <h2 className="text-sm font-semibold text-foreground/60 mb-2">Your agents</h2>
+            <div className="flex gap-3 overflow-x-auto pb-2">
+              {localAgents.map((agent) => (
+                <div key={agent.id} className="min-w-[280px] bg-card border border-border rounded-2xl p-4 flex items-center gap-4">
+                  <div className="bg-background p-3 rounded-xl">
+                    {getSourceIcon(agent.source_type)}
+                  </div>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-foreground font-semibold truncate max-w-[140px]">{agent.title}</div>
+                    <span className="text-xs text-foreground/60 ml-2 whitespace-nowrap">Due: {new Date(agent.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+                  
+                </div>
+              ))}
+            </div>
           </div>
-        ) : agents.length === 0 ? (
+        )}
+        {loading && localAgents.length === 0 ? (
+          <div className="flex justify-center items-center h-64">
+            <AikikoWordLoader size={220} />
+          </div>
+        ) : localAgents.length === 0 && agents.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

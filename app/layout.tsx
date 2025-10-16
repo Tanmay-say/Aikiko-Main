@@ -2,6 +2,7 @@ import './globals.css';
 import type { Metadata } from 'next';
 import { MuseoModerno } from 'next/font/google';
 import { ThemeProvider } from '@/components/ThemeProvider';
+import { AuthProvider } from '@/components/AuthProvider';
 
 const museoModerno = MuseoModerno({ 
   subsets: ['latin'],
@@ -23,7 +24,9 @@ export default function RootLayout({
     <html lang="en" className={museoModerno.variable} suppressHydrationWarning>
       <body className={museoModerno.className}>
         <ThemeProvider>
-          {children}
+          <AuthProvider>
+            {children}
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

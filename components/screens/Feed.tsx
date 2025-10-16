@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Loader2, Twitter, Globe, Code, MessageSquare, TrendingUp, Bell, Newspaper } from 'lucide-react';
+import { AikikoWordLoader } from '@/components/AikikoWordLoader';
 import { BottomNav } from '../BottomNav';
 import { Screen, FeedItem } from '../AikikoApp';
 import { createClient } from '@/lib/supabase-client';
@@ -98,7 +99,7 @@ export function Feed({ navigate }: FeedProps) {
 
         {loading && !refreshing ? (
           <div className="flex justify-center items-center h-64">
-            <Loader2 className="animate-spin text-[#D65A31]" size={32} />
+            <AikikoWordLoader size={220} />
           </div>
         ) : feedItems.length === 0 ? (
           <motion.div
