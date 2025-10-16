@@ -7,7 +7,7 @@ export function AikikoWordLoader({ size = 180 }: { size?: number }) {
   const textColor = 'currentColor';
 
   return (
-    <div className="flex items-center justify-center" style={{ color: 'var(--foreground)' }}>
+    <div className="flex items-center justify-center w-full h-full" style={{ color: 'var(--foreground)' }}>
       <svg
         width={size}
         height={size * 0.35}

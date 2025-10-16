@@ -86,11 +86,7 @@ export function Feed({ navigate }: FeedProps) {
     <div className="h-full flex flex-col bg-background">
       <Overlay />
       <div className="flex items-center justify-between px-6 pt-6 pb-4">
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <AikikoWordLoader size={140} />
-          </div>
-        </div>
+        <h1 className="text-3xl font-bold text-foreground">Aikiko</h1>
         <motion.button
           whileTap={{ scale: 0.95 }}
           onClick={() => navigate('create-agent')}

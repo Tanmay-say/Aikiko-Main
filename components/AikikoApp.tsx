@@ -47,8 +47,12 @@ export function AikikoApp() {
   const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
-    const id = setTimeout(() => setShowSplash(false), 1200);
-    return () => clearTimeout(id);
+    const fast = setTimeout(() => setShowSplash(false), 800);
+    const safety = setTimeout(() => setShowSplash(false), 3000);
+    return () => {
+      clearTimeout(fast);
+      clearTimeout(safety);
+    };
   }, []);
 
   const navigate = (screen: Screen, agentId?: string) => {

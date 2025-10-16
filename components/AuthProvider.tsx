@@ -16,9 +16,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     []
   );
   const [user, setUser] = useState<any | null>(null);
+  const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user ?? null));
+    // If redirected back with hash (/#access_token=...), let Supabase parse it
+    const handleHashSession = async () => {
+      try {
+        if (typeof window !== 'undefined' && window.location.hash && window.location.hash.includes('access_token')) {
+          await supabase.auth.getSession();
+          // Clean URL to remove tokens
+          const url = new URL(window.location.href);
+          window.history.replaceState({}, '', url.origin + url.pathname);
+        }
+      } catch (e) {
+        console.error('Auth hash handling error:', e);
+      }
+    };
+
+    handleHashSession().finally(async () => {
+      const { data } = await supabase.auth.getUser();
+      setUser(data.user ?? null);
+      setInitializing(false);
+    });
     const { data: sub } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user ?? null);
     });
