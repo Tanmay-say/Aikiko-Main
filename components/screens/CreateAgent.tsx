@@ -51,6 +51,16 @@ export function CreateAgent({ goBack, navigate, onCreated }: CreateAgentProps) {
     setLoading(true);
 
     try {
+      // Validate OpenServ configuration
+      if (!openServClient.isConfigured()) {
+        console.error('OpenServ not configured:', openServClient.getConfig());
+        alert('OpenServ is not configured. Check console and OPENSERV_SETUP.md for setup instructions.');
+        setLoading(false);
+        return;
+      }
+
+      console.log('OpenServ Config:', openServClient.getConfig());
+
       const { data: { user } } = await supabase.auth.getUser();
 
       if (!user) {
