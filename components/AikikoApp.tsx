@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Feed } from './screens/Feed';
 import { AgentsList } from './screens/AgentsList';
 import { Profile } from './screens/Profile';
@@ -10,6 +10,7 @@ import { Credits } from './screens/Credits';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from './AuthProvider';
 import AuthUI from '@/components/AuthUI';
+import { AikikoWordLoader } from './AikikoWordLoader';
 
 export type Screen = 'feed' | 'agents' | 'profile' | 'create-agent' | 'agent-detail' | 'credits';
 
@@ -43,6 +44,12 @@ export function AikikoApp() {
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [localAgents, setLocalAgents] = useState<Agent[]>([]);
   const { user } = useAuth();
+  const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    const id = setTimeout(() => setShowSplash(false), 1200);
+    return () => clearTimeout(id);
+  }, []);
 
   const navigate = (screen: Screen, agentId?: string) => {
     if (agentId) setSelectedAgentId(agentId);
@@ -50,11 +57,31 @@ export function AikikoApp() {
   };
 
   const goBack = () => {
-    if (currentScreen === 'agent-detail' || currentScreen === 'create-agent' || currentScreen === 'credits') {
+    if (currentScreen === 'agent-detail' || currentScreen === 'create-agent' || currentScreen === 'credits' || currentScreen === 'profile') {
       setCurrentScreen('feed');
       setSelectedAgentId(null);
     }
   };
+
+  // Initial splash
+  if (showSplash) {
+    return (
+      <div className="fixed inset-0 bg-background flex items-center justify-center">
+        <AikikoWordLoader size={260} />
+      </div>
+    );
+  }
+
+  // Force a sign-in flow before accessing the app
+  if (!user) {
+    return (
+      <div className="fixed inset-0 bg-background flex items-center justify-center px-6">
+        <div className="w-full max-w-[390px] bg-card/60 backdrop-blur border border-white/10 rounded-3xl p-6">
+          <AuthUI />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-background overflow-hidden">
@@ -92,21 +119,7 @@ export function AikikoApp() {
               exit={{ opacity: 0, x: 20 }}
               className="h-full"
             >
-              {user ? (
-                <Profile navigate={navigate} />
-              ) : (
-                <div className="h-full bg-background">
-                  <div className="px-6 pt-6 pb-4">
-                    <h1 className="text-4xl font-bold text-foreground">Profile</h1>
-                    <p className="text-foreground/60 text-lg mt-1">Sign in to access settings</p>
-                  </div>
-                  <div className="px-6">
-                    <div className="bg-card/60 backdrop-blur border border-white/10 rounded-3xl p-6">
-                      <AuthUI />
-                    </div>
-                  </div>
-                </div>
-              )}
+              <Profile navigate={navigate} />
             </motion.div>
           )}
 

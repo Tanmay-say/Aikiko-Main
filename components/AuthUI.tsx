@@ -19,6 +19,7 @@ export default function AuthUI() {
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
+  const projectRef = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').match(/https?:\/\/([a-z0-9-]+)\.supabase\.co/i)?.[1] || 'unknown';
 
   const signInWithGoogle = async () => {
     setLoading(true);
@@ -55,6 +56,13 @@ export default function AuthUI() {
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-center">
+        <div className="scale-90">
+          {/* Aikiko word logo */}
+          <div className="text-4xl font-bold text-foreground">Aikiko</div>
+        </div>
+      </div>
+
       <div className="text-center">
         <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-[#D65A31] to-[#FFB800] flex items-center justify-center">
           <User className="w-8 h-8 text-white" />
@@ -71,7 +79,9 @@ export default function AuthUI() {
             exit={{ opacity: 0, y: -10 }}
             className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-red-500 text-sm"
           >
-            {error}
+            {error.includes('provider is not enabled')
+              ? 'Google provider is disabled in Supabase. Enable it in Auth → Providers, add Client ID/Secret, and set redirect URL to your site.'
+              : error}
           </motion.div>
         )}
       </AnimatePresence>
@@ -127,6 +137,10 @@ export default function AuthUI() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <div className="text-xs text-foreground/40 text-center">
+        Supabase project: <span className="font-mono">{projectRef}</span>
+      </div>
     </div>
   );
 }

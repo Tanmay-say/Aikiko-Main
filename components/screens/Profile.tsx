@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Loader2, Sparkles, Sun, Moon } from 'lucide-react';
+import { Loader2, Sparkles, Sun, Moon, ArrowLeft } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useAuth } from '../AuthProvider';
 import AuthUI, { AuthUserMenu } from '@/components/AuthUI';
@@ -89,9 +89,18 @@ export function Profile({ navigate }: ProfileProps) {
 
   return (
     <div className="h-full flex flex-col bg-background">
-      <div className="px-6 pt-6 pb-4">
+      <div className="px-6 pt-6 pb-2">
         <div className="flex items-center justify-between">
-          <h1 className="text-4xl font-bold text-foreground">Profile</h1>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate('feed')}
+              className="w-10 h-10 rounded-xl border border-border flex items-center justify-center text-foreground/80 hover:text-foreground"
+              aria-label="Go back"
+            >
+              <ArrowLeft size={18} />
+            </button>
+            <h1 className="text-3xl font-bold text-foreground">Profile</h1>
+          </div>
           <div className="flex items-center gap-2">
             {mounted && (
               <button
@@ -105,22 +114,22 @@ export function Profile({ navigate }: ProfileProps) {
             <AuthUserMenu />
           </div>
         </div>
-        <p className="text-foreground/60 text-lg mt-1">Account Settings</p>
+        <p className="text-foreground/60 mt-1">Account Settings</p>
       </div>
 
       <div className="flex-1 overflow-y-auto pb-20 px-6 space-y-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-3">
           <motion.div
             whileTap={{ scale: 0.98 }}
-            className="bg-card rounded-3xl p-6 border border-border"
+            className="bg-card rounded-2xl p-5 border border-border"
           >
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-3">
               <p className="text-foreground/60 text-sm">Your plan</p>
               {user && user.user_metadata?.avatar_url && (
                 <img src={user.user_metadata.avatar_url} alt={user.user_metadata.full_name || 'Avatar'} className="w-10 h-10 rounded-full border border-border" />
               )}
             </div>
-            <h2 className="text-5xl font-bold text-foreground capitalize mb-1">
+            <h2 className="text-4xl font-bold text-foreground capitalize mb-1">
               {profile?.subscription_plan || 'Free'}
             </h2>
             {user ? (
@@ -136,10 +145,10 @@ export function Profile({ navigate }: ProfileProps) {
           <motion.div
             whileTap={{ scale: 0.98 }}
             onClick={() => navigate('credits')}
-            className="bg-card rounded-3xl p-6 cursor-pointer border border-border"
+            className="bg-card rounded-2xl p-5 cursor-pointer border border-border"
           >
             <p className="text-foreground/60 text-sm mb-2">Credits</p>
-            <h2 className="text-5xl font-bold text-foreground mb-2">
+            <h2 className="text-4xl font-bold text-foreground mb-1">
               {profile?.credits || 0}
             </h2>
             <p className="text-xs text-foreground/60">
@@ -150,7 +159,7 @@ export function Profile({ navigate }: ProfileProps) {
             </p>
             <motion.button
               whileTap={{ scale: 0.95 }}
-              className="w-full bg-background text-foreground py-2 rounded-xl text-sm font-semibold mt-3"
+              className="w-full bg-background text-foreground py-2 rounded-xl text-sm font-semibold mt-2"
             >
               Buy Credits
             </motion.button>

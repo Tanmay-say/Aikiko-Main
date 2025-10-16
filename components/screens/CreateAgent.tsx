@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Twitter, Globe, Code, MessageSquare, Check, Loader2 } from 'lucide-react';
 import { Screen } from '../AikikoApp';
 import { createClient } from '@/lib/supabase-client';
+import { openServClient, OpenServAgentConfig } from '@/lib/openserv-client';
 
 interface CreateAgentProps {
   goBack: () => void;
@@ -28,6 +29,11 @@ export function CreateAgent({ goBack, navigate, onCreated }: CreateAgentProps) {
   const [title, setTitle] = useState('');
   const [sourceUrl, setSourceUrl] = useState('');
   const [notificationCriteria, setNotificationCriteria] = useState('');
+  // Social config fields → This will be serialized to JSON and sent to AI
+  const [socialHandle, setSocialHandle] = useState('');
+  const [socialChannels, setSocialChannels] = useState<string>('timeline');
+  const [socialTimeframe, setSocialTimeframe] = useState<'24h' | '7d' | '30d'>('24h');
+  const [socialKeywords, setSocialKeywords] = useState('');
   const [monitorFrequency, setMonitorFrequency] = useState<'hourly' | 'daily' | 'weekly'>('daily');
   const [isActive, setIsActive] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -53,33 +59,69 @@ export function CreateAgent({ goBack, navigate, onCreated }: CreateAgentProps) {
         return;
       }
 
-      const { error } = await supabase.from('agents').insert({
+      // Build OpenServ config
+      let openServConfig: OpenServAgentConfig;
+      if (sourceType === 'twitter') {
+        openServConfig = {
+          type: 'social',
+          provider: 'twitter',
+          handle: socialHandle,
+          channels: socialChannels.split(',').map(s => s.trim()).filter(Boolean),
+          timeframe: socialTimeframe,
+          keywords: socialKeywords.split(',').map(s => s.trim()).filter(Boolean),
+        };
+      } else if (sourceType === 'web') {
+        openServConfig = {
+          type: 'web',
+          url: sourceUrl,
+          notificationCriteria: notificationCriteria || undefined,
+        };
+      } else {
+        openServConfig = {
+          type: 'subject',
+          subject: title,
+          notificationCriteria: notificationCriteria || undefined,
+        };
+      }
+
+      // Trigger OpenServ webhook
+      const openServTask = await openServClient.createAgent(openServConfig);
+
+      // Save to Supabase with OpenServ task ID
+      const { error, data: insertedAgent } = await supabase.from('agents').insert({
         user_id: user.id,
-        title: title || 'Untitled Agent',
+        title: title || socialHandle || 'Untitled Agent',
         source_type: sourceType,
         source_url: sourceUrl || null,
-        notification_criteria: notificationCriteria || null,
+        notification_criteria: JSON.stringify(openServConfig),
         monitor_frequency: monitorFrequency,
         credits_per_check: 1.0,
         is_active: isActive,
-      });
+      }).select().single();
 
       if (error) throw error;
 
       const newAgent = {
-        id: typeof crypto !== 'undefined' && 'randomUUID' in crypto ? (crypto as any).randomUUID() : `${Date.now()}`,
-        title: title || 'Untitled Agent',
+        id: insertedAgent?.id || `${Date.now()}`,
+        title: title || socialHandle || 'Untitled Agent',
         source_type: sourceType,
         source_url: sourceUrl || null,
         monitor_frequency: monitorFrequency,
         is_active: isActive,
         created_at: new Date().toISOString(),
       };
+      
       onCreated?.(newAgent);
+
+      // Start monitoring if active
+      if (isActive && insertedAgent?.id) {
+        await openServClient.monitorAgent(insertedAgent.id, openServConfig);
+      }
+
       navigate('agents');
     } catch (error) {
       console.error('Error creating agent:', error);
-      alert('Failed to create agent');
+      alert('Failed to create agent. Check console for details.');
     } finally {
       setLoading(false);
     }
@@ -155,6 +197,16 @@ export function CreateAgent({ goBack, navigate, onCreated }: CreateAgentProps) {
                 >
                   Web Page
                 </button>
+                <button
+                  onClick={() => setSourceType('twitter')}
+                  className={`flex-1 py-3 px-4 rounded-2xl font-semibold transition-colors ${
+                    sourceType === 'twitter'
+                      ? 'bg-[#222831] text-[#EEEEEE]'
+                      : 'bg-[#393E46] text-[#EEEEEE]/60'
+                  }`}
+                >
+                  X / Twitter
+                </button>
               </div>
 
               {sourceType === 'subject' ? (
@@ -170,7 +222,7 @@ export function CreateAgent({ goBack, navigate, onCreated }: CreateAgentProps) {
                     className="w-full bg-[#393E46] text-[#EEEEEE] px-4 py-4 rounded-2xl border-2 border-transparent focus:border-[#D65A31] outline-none"
                   />
                 </div>
-              ) : (
+              ) : sourceType === 'web' ? (
                 <div>
                   <label className="text-[#EEEEEE] font-semibold block mb-2">
                     Web Page URL <span className="text-[#D65A31]">*</span>
@@ -182,6 +234,51 @@ export function CreateAgent({ goBack, navigate, onCreated }: CreateAgentProps) {
                     placeholder="e.g. https://netflix.com/careers/jobs"
                     className="w-full bg-[#393E46] text-[#EEEEEE] px-4 py-4 rounded-2xl border-2 border-transparent focus:border-[#D65A31] outline-none"
                   />
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-[#EEEEEE] font-semibold block mb-2">X / Twitter Handle <span className="text-[#D65A31]">*</span></label>
+                    <input
+                      type="text"
+                      value={socialHandle}
+                      onChange={(e) => setSocialHandle(e.target.value)}
+                      placeholder="e.g. @aikikoApp"
+                      className="w-full bg-[#393E46] text-[#EEEEEE] px-4 py-4 rounded-2xl border-2 border-transparent focus:border-[#D65A31] outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[#EEEEEE] font-semibold block mb-2">Channels to monitor</label>
+                    <input
+                      type="text"
+                      value={socialChannels}
+                      onChange={(e) => setSocialChannels(e.target.value)}
+                      placeholder="comma separated, e.g. timeline,replies,media"
+                      className="w-full bg-[#393E46] text-[#EEEEEE] px-4 py-4 rounded-2xl border-2 border-transparent focus:border-[#D65A31] outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[#EEEEEE] font-semibold block mb-2">Timeframe</label>
+                    <select
+                      value={socialTimeframe}
+                      onChange={(e) => setSocialTimeframe(e.target.value as any)}
+                      className="w-full bg-[#393E46] text-[#EEEEEE] px-4 py-4 rounded-2xl border-2 border-transparent focus:border-[#D65A31] outline-none appearance-none"
+                    >
+                      <option value="24h">Last 24 hours</option>
+                      <option value="7d">Last 7 days</option>
+                      <option value="30d">Last 30 days</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[#EEEEEE] font-semibold block mb-2">Keywords (optional)</label>
+                    <input
+                      type="text"
+                      value={socialKeywords}
+                      onChange={(e) => setSocialKeywords(e.target.value)}
+                      placeholder="comma separated, e.g. launch,bug,release"
+                      className="w-full bg-[#393E46] text-[#EEEEEE] px-4 py-4 rounded-2xl border-2 border-transparent focus:border-[#D65A31] outline-none"
+                    />
+                  </div>
                 </div>
               )}
             </motion.div>
@@ -288,7 +385,8 @@ export function CreateAgent({ goBack, navigate, onCreated }: CreateAgentProps) {
             onClick={() => setStep(step + 1)}
             disabled={
               (step === 1 && sourceType === 'subject' && !title) ||
-              (step === 1 && sourceType === 'web' && !sourceUrl)
+              (step === 1 && sourceType === 'web' && !sourceUrl) ||
+              (step === 1 && sourceType === 'twitter' && !socialHandle)
             }
             className="w-full bg-[#D65A31] text-[#EEEEEE] py-4 rounded-2xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
           >
