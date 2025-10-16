@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Loader2, Twitter, Globe, Code, MessageSquare, TrendingUp, Bell, Newspaper } from 'lucide-react';
 import { AikikoWordLoader } from '@/components/AikikoWordLoader';
+import { useFullScreenLoader } from '@/components/useFullScreenLoader';
 import { BottomNav } from '../BottomNav';
 import { Screen, FeedItem } from '../AikikoApp';
 import { createClient } from '@/lib/supabase-client';
@@ -16,12 +17,16 @@ export function Feed({ navigate }: FeedProps) {
   const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const { visible, show, hide, Overlay } = useFullScreenLoader(false);
 
   const supabase = useMemo(() => createClient(), []);
 
   const fetchFeedItems = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
-    else setLoading(true);
+    else {
+      setLoading(true);
+      show();
+    }
 
     try {
       const { data: items } = await supabase
@@ -41,6 +46,7 @@ export function Feed({ navigate }: FeedProps) {
     } finally {
       setLoading(false);
       setRefreshing(false);
+      hide();
     }
   }, [supabase]);
 
@@ -78,8 +84,13 @@ export function Feed({ navigate }: FeedProps) {
 
   return (
     <div className="h-full flex flex-col bg-background">
+      <Overlay />
       <div className="flex items-center justify-between px-6 pt-6 pb-4">
-        <h1 className="text-4xl font-bold text-foreground">Aikiko</h1>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <AikikoWordLoader size={140} />
+          </div>
+        </div>
         <motion.button
           whileTap={{ scale: 0.95 }}
           onClick={() => navigate('create-agent')}
