@@ -5,7 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 
 type AuthContextValue = {
   user: any | null;
-  supabase: ReturnType<typeof createClient>;
+  supabase: any; // keep loose to avoid generic incompatibilities across versions
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
