@@ -22,14 +22,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     const initializeAuth = async () => {
       try {
-        // Handle OAuth redirect hash fragments
-        if (typeof window !== 'undefined' && window.location.hash) {
+        // Handle OAuth redirect with code parameter
+        if (typeof window !== 'undefined') {
+          const urlParams = new URLSearchParams(window.location.search);
           const hashParams = new URLSearchParams(window.location.hash.substring(1));
-          if (hashParams.has('access_token') || hashParams.has('refresh_token')) {
+          
+          // Check for authorization code in URL params
+          if (urlParams.has('code') || hashParams.has('access_token') || hashParams.has('refresh_token')) {
+            console.log('🔄 Processing OAuth redirect...');
+            
             // Let Supabase handle the session from URL
-            await supabase.auth.getSession();
+            const { data: { session }, error } = await supabase.auth.getSession();
+            
+            if (error) {
+              console.error('❌ Session error:', error);
+            } else if (session) {
+              console.log('✅ Session established:', session.user.email);
+            }
+            
             // Clean URL after processing
-            window.history.replaceState({}, '', window.location.pathname);
+            const cleanUrl = window.location.origin + window.location.pathname;
+            window.history.replaceState({}, '', cleanUrl);
           }
         }
 
@@ -56,14 +69,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       async (event, session) => {
         if (!mounted) return;
         
-        console.log('Auth state change:', event, session?.user?.email);
+        console.log('🔄 Auth state change:', event, session?.user?.email);
         setUser(session?.user ?? null);
         
         // Clean URL on successful auth
         if (typeof window !== 'undefined' && 
             (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && 
-            window.location.hash) {
-          window.history.replaceState({}, '', window.location.pathname);
+            (window.location.search || window.location.hash)) {
+          const cleanUrl = window.location.origin + window.location.pathname;
+          window.history.replaceState({}, '', cleanUrl);
+          console.log('🧹 Cleaned URL after auth');
         }
       }
     );
@@ -90,5 +105,3 @@ export function useAuth() {
   }
   return ctx;
 }
-
-
