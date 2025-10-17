@@ -25,22 +25,50 @@ export default function AuthUI() {
     setLoading(true);
     setError('');
     try {
-      // Validate env before attempting
-      const supaUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supaKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-      if (!supaUrl || !supaKey) {
-        throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY');
-      }
+      console.log('🔍 Auth Debug:', {
+        projectRef,
+        origin: typeof window !== 'undefined' ? window.location.origin : 'SSR',
+      });
 
-      await supabase.auth.signInWithOAuth({
+      const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
-          queryParams: { prompt: 'select_account' },
+          queryParams: { 
+            prompt: 'select_account',
+            access_type: 'offline',
+          },
+          skipBrowserRedirect: false,
         },
       });
+
+      console.log('📤 OAuth response:', { data, error: oauthError });
+
+      if (oauthError) {
+        throw oauthError;
+      }
+
+      // If we got a URL, manually redirect (in case auto-redirect fails)
+      if (data?.url && typeof window !== 'undefined') {
+        console.log('🔗 Redirecting to:', data.url);
+        window.location.href = data.url;
+      }
     } catch (err: any) {
-      setError(err.message || 'Google sign-in failed');
+      console.error('❌ Google sign-in error:', err);
+      const msg = err.message || 'Google sign-in failed';
+      
+      // Improved error handling with specific messages
+      if (msg.includes('401') || msg.includes('unauthorized')) {
+        setError('Authentication failed (401). Please check: 1) Google provider is enabled in Supabase, 2) Client ID/Secret are correct, 3) Redirect URLs match.');
+      } else if (msg.includes('provider is not enabled') || msg.includes('Provider not found')) {
+        setError('Google provider is not enabled. Enable it in Supabase Auth → Providers → Google.');
+      } else if (msg.includes('redirect_uri_mismatch')) {
+        setError('Redirect URI mismatch. Verify Google OAuth settings match your Supabase callback URL.');
+      } else if (msg.includes('popup_blocked')) {
+        setError('Popup was blocked by browser. Please allow popups for this site or use the fallback link below.');
+      } else {
+        setError(`Sign-in failed: ${msg}`);
+      }
     } finally {
       setLoading(false);
     }

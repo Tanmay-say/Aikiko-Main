@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Loader2, Sparkles, Sun, Moon, ArrowLeft } from 'lucide-react';
 import { useTheme } from 'next-themes';
@@ -9,7 +9,6 @@ import AuthUI, { AuthUserMenu } from '@/components/AuthUI';
 import { AikikoWordLoader } from '@/components/AikikoWordLoader';
 import { BottomNav } from '../BottomNav';
 import { Screen } from '../AikikoApp';
-import { createClient } from '@/lib/supabase-client';
 
 interface ProfileProps {
   navigate: (screen: Screen) => void;
@@ -30,26 +29,27 @@ export function Profile({ navigate }: ProfileProps) {
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
-  const { user } = useAuth();
-
-  const supabase = useMemo(() => createClient(), []);
+  const { user, supabase } = useAuth();
 
   useEffect(() => {
     const fetchProfile = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .maybeSingle();
 
-        if (user) {
-          const { data } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', user.id)
-            .maybeSingle();
-
-          if (data) {
-            setProfile(data);
-          }
+        if (error) {
+          console.error('Error fetching profile:', error);
+        } else if (data) {
+          setProfile(data);
         }
       } catch (error) {
         console.error('Error fetching profile:', error);
@@ -59,23 +59,29 @@ export function Profile({ navigate }: ProfileProps) {
     };
 
     fetchProfile();
-  }, [supabase]);
+  }, [user, supabase]);
 
   const updateNotificationSetting = async (field: 'email_notifications' | 'push_notifications', value: boolean) => {
-    if (!profile) return;
+    if (!profile || !user) return;
 
+    // Optimistic update
     setProfile({ ...profile, [field]: value });
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase
-          .from('profiles')
-          .update({ [field]: value })
-          .eq('id', user.id);
+      const { error } = await supabase
+        .from('profiles')
+        .update({ [field]: value })
+        .eq('id', user.id);
+        
+      if (error) {
+        console.error('Error updating notification setting:', error);
+        // Revert optimistic update on error
+        setProfile({ ...profile, [field]: !value });
       }
     } catch (error) {
       console.error('Error updating notification setting:', error);
+      // Revert optimistic update on error
+      setProfile({ ...profile, [field]: !value });
     }
   };
 

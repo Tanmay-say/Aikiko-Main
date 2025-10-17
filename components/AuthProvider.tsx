@@ -1,65 +1,93 @@
 'use client';
 
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { createContext, useContext, useEffect, useState } from 'react';
+import { createClient } from '@/lib/supabase-client';
+import { User, SupabaseClient } from '@supabase/supabase-js';
 
 type AuthContextValue = {
-  user: any | null;
-  supabase: any; // keep loose to avoid generic incompatibilities across versions
+  user: User | null;
+  supabase: SupabaseClient;
+  loading: boolean;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const supabase = useMemo(
-    () => createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!),
-    []
-  );
-  const [user, setUser] = useState<any | null>(null);
-  const [initializing, setInitializing] = useState(true);
+  const supabase = createClient();
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // If redirected back with hash (/#access_token=...), let Supabase parse it
-    const handleHashSession = async () => {
+    let mounted = true;
+    
+    const initializeAuth = async () => {
       try {
-        if (typeof window !== 'undefined' && window.location.hash && window.location.hash.includes('access_token')) {
-          await supabase.auth.getSession();
-          // Clean URL to remove tokens
-          const url = new URL(window.location.href);
-          window.history.replaceState({}, '', url.origin + url.pathname);
+        // Handle OAuth redirect hash fragments
+        if (typeof window !== 'undefined' && window.location.hash) {
+          const hashParams = new URLSearchParams(window.location.hash.substring(1));
+          if (hashParams.has('access_token') || hashParams.has('refresh_token')) {
+            // Let Supabase handle the session from URL
+            await supabase.auth.getSession();
+            // Clean URL after processing
+            window.history.replaceState({}, '', window.location.pathname);
+          }
         }
-      } catch (e) {
-        console.error('Auth hash handling error:', e);
+
+        // Get initial session
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('Error getting session:', error);
+        }
+        
+        if (mounted) {
+          setUser(session?.user ?? null);
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
-    handleHashSession().finally(async () => {
-      const { data } = await supabase.auth.getSession();
-      setUser(data.session?.user ?? null);
-      setInitializing(false);
-    });
-    const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setUser(session?.user ?? null);
-      if (typeof window !== 'undefined' && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
-        const url = new URL(window.location.href);
-        if (url.hash) {
-          window.history.replaceState({}, '', url.origin + url.pathname);
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!mounted) return;
+        
+        console.log('Auth state change:', event, session?.user?.email);
+        setUser(session?.user ?? null);
+        
+        // Clean URL on successful auth
+        if (typeof window !== 'undefined' && 
+            (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && 
+            window.location.hash) {
+          window.history.replaceState({}, '', window.location.pathname);
         }
       }
-    });
+    );
+
+    initializeAuth();
+
     return () => {
-      sub.subscription.unsubscribe();
+      mounted = false;
+      subscription.unsubscribe();
     };
   }, [supabase]);
 
   return (
-    <AuthContext.Provider value={{ user, supabase }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ user, supabase, loading }}>
+      {children}
+    </AuthContext.Provider>
   );
 }
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  if (!ctx) {
+    throw new Error('useAuth must be used within AuthProvider');
+  }
   return ctx;
 }
 

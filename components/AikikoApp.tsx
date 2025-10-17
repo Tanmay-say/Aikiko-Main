@@ -43,7 +43,7 @@ export function AikikoApp() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('feed');
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [localAgents, setLocalAgents] = useState<Agent[]>([]);
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
@@ -68,7 +68,7 @@ export function AikikoApp() {
   };
 
   // Initial splash
-  if (showSplash) {
+  if (showSplash || authLoading) {
     return (
       <div className="fixed inset-0 bg-background flex items-center justify-center">
         <AikikoWordLoader size={260} />
