@@ -33,6 +33,8 @@ export function createClient(): SupabaseClient {
           persistSession: true,
           detectSessionInUrl: true,
           flowType: 'pkce',
+          storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+          storageKey: 'supabase.auth.token',
         },
       });
       

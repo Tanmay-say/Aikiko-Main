@@ -30,14 +30,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Check for authorization code in URL params
           if (urlParams.has('code') || hashParams.has('access_token') || hashParams.has('refresh_token')) {
             console.log('🔄 Processing OAuth redirect...');
+            console.log('📍 Current URL:', window.location.href);
+            console.log('🔍 URL params:', Object.fromEntries(urlParams));
+            console.log('🔍 Hash params:', Object.fromEntries(hashParams));
             
-            // Let Supabase handle the session from URL
-            const { data: { session }, error } = await supabase.auth.getSession();
-            
-            if (error) {
-              console.error('❌ Session error:', error);
-            } else if (session) {
-              console.log('✅ Session established:', session.user.email);
+            try {
+              // CRITICAL: Exchange the OAuth code for a session
+              // The detectSessionInUrl: true in client config should handle this automatically
+              // But we need to explicitly get the session after the redirect
+              const { data: { session }, error } = await supabase.auth.getSession();
+              
+              if (error) {
+                console.error('❌ Session exchange error:', error);
+                console.error('❌ Error details:', error.message);
+              } else if (session) {
+                console.log('✅ Session established successfully:', session.user.email);
+              } else {
+                console.log('⚠️ No session found after OAuth redirect');
+              }
+            } catch (error) {
+              console.error('❌ OAuth processing error:', error);
             }
             
             // Clean URL after processing
