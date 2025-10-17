@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { MuseoModerno } from 'next/font/google';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { AuthProvider } from '@/components/AuthProvider';
+import { AuthCallbackHandler } from '@/components/AuthCallbackHandler';
 
 const museoModerno = MuseoModerno({ 
   subsets: ['latin'],
@@ -25,6 +26,7 @@ export default function RootLayout({
       <body className={museoModerno.className}>
         <ThemeProvider>
           <AuthProvider>
+            <AuthCallbackHandler />
             {children}
           </AuthProvider>
         </ThemeProvider>
