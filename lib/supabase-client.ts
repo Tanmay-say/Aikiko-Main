@@ -29,12 +29,12 @@ export function createClient(): SupabaseClient {
       
       supabaseClient = createSupabaseClient(supabaseUrl, keyToUse, {
         auth: {
-          autoRefreshToken: true,
           persistSession: true,
+          autoRefreshToken: true,
           detectSessionInUrl: true,
           flowType: 'pkce',
+          storageKey: 'aikiko-sb-auth',
           storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-          storageKey: 'supabase.auth.token',
         },
       });
       
